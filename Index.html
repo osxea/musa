@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Muse — Оценка лица</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0a0908;--card:#141210;--card2:#1a1714;--line:#242019;--gold:#d4b46a;--gold2:#e8cd8a;--golddim:#8a6f2f;--text:#f2ede3;--muted:#8f8778}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{background:radial-gradient(900px 500px at 50% -8%,rgba(212,180,106,.13),transparent 62%),var(--bg);color:var(--text);font-family:"Inter",-apple-system,sans-serif;padding-bottom:48px;overflow-x:hidden;min-height:100vh;-webkit-font-smoothing:antialiased}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 8px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#24201a,#131110);border:1px solid var(--line);display:grid;place-items:center;color:var(--gold)}
+.logo svg{width:20px;height:20px}
+.brand-name{font-family:"Unbounded",sans-serif;font-weight:600;font-size:17px}
+.lang{background:transparent;border:1px solid var(--line);color:var(--text);padding:9px 14px;border-radius:11px;font-size:12px;font-weight:600;letter-spacing:.06em}
+.screen{display:none;padding:14px 20px 0}
+.screen.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pill{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:11px;letter-spacing:.08em;font-weight:500;color:var(--muted);text-transform:uppercase;margin-bottom:26px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+.hero{font-family:"Unbounded",sans-serif;font-size:clamp(38px,11vw,54px);line-height:1.02;font-weight:800;letter-spacing:-.03em;margin-bottom:22px}
+.hero span,.hero em{display:block}
+.hero em{font-style:italic;font-weight:400;background:linear-gradient(180deg,var(--gold2) 0%,#a98a3f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:6px}
+.sub{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:30px;max-width:92%}
+.btn-primary{width:100%;padding:19px;border:0;border-radius:16px;background:linear-gradient(180deg,var(--gold2) 0%,#c1a052 100%);color:#1a1408;font-size:16px;font-weight:700;font-family:"Inter",sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 14px 34px -14px rgba(212,180,106,.75),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .1s}
+.btn-primary:active{transform:scale(.98)}
+.btn-ghost{width:100%;padding:17px;border:1px solid var(--line);border-radius:16px;background:transparent;color:var(--text);font-size:15px;font-weight:600;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-ghost svg{color:var(--gold)}
+.checks{list-style:none;margin-top:28px;font-size:14px;line-height:2.1}
+.checks li{display:flex;align-items:center;gap:11px;color:var(--muted)}
+.chk{color:var(--gold);font-weight:700;font-size:13px;width:16px;text-align:center}
+#screen-loading{min-height:70vh;display:none!important;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:var(--muted);font-size:15px}
+#screen-loading.active{display:flex!important}
+.spinner{width:56px;height:56px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--gold);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-bar{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;padding:0 4px}
+.status-left{display:flex;align-items:center;gap:8px;color:var(--gold)}
+.status-right{color:var(--muted)}
+.preview-wrap{position:relative;border-radius:22px;overflow:hidden;margin-bottom:16px;background:#000;border:1px solid var(--line);box-shadow:0 24px 60px -30px rgba(0,0,0,.9)}
+#preview{width:100%;display:block}
+.score-card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;gap:20px;align-items:center;margin-bottom:14px}
+.score-ring{position:relative;width:100px;height:100px;flex:none}
+.score-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring-bg{fill:none;stroke:#231f1a;stroke-width:7}
+.ring-fg{fill:none;stroke:var(--gold);stroke-width:7;stroke-linecap:round;stroke-dasharray:264;stroke-dashoffset:264;transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1);filter:drop-shadow(0 0 6px rgba(212,180,106,.5))}
+.score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-num strong{font-family:"Unbounded",sans-serif;font-size:26px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.score-num small{font-size:10px;color:var(--muted);margin-top:3px}
+.score-meta{flex:1;min-width:0}
+.meta-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.muted{color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.muted.small{text-transform:none;letter-spacing:0;font-size:13px;margin-top:7px;line-height:1.45}
+.badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(212,180,106,.09);border:1px solid rgba(212,180,106,.3);padding:4px 9px;border-radius:999px}
+.tier{font-family:"Unbounded",sans-serif;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 15px}
+.metric .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11px;font-size:12.5px;gap:6px}
+.metric .row span:first-child{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric .val{font-weight:700;font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;flex:none}
+.bar{height:3px;background:#231f1a;border-radius:2px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--golddim),var(--gold2));border-radius:2px;transition:width .9s cubic-bezier(.22,1,.36,1);box-shadow:0 0 8px rgba(212,180,106,.4)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M4 9V6a2 2 0 0 1 2-2h3M20 9V6a2 2 0 0 0-2-2h-3M4 15v3a2 2 0 0 0 2 2h3M20 15v3a2 2 0 0 1-2 2h-3"/>
+        <circle cx="9" cy="11" r=".9" fill="currentColor" stroke="none"/>
+        <circle cx="15" cy="11" r=".9" fill="currentColor" stroke="none"/>
+        <path d="M9 15.5c.9.7 1.9 1 3 1s2.1-.3 3-1" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="brand-name">Muse</span>
+  </div>
+  <button id="langBtn" class="lang">RU</button>
+</header>
+
+<section id="screen-home" class="screen active">
+  <div class="pill"><span class="dot"></span><span data-i18n="freePill"></span></div>
+  <h1 class="hero">
+    <span data-i18n="heroLine1"></span>
+    <em data-i18n="heroLine2"></em>
+    <span data-i18n="heroLine3"></span>
+  </h1>
+  <p class="sub" data-i18n="heroSub"></p>
+  <button id="pickBtn" class="btn-primary">
+    <span data-i18n="btnRate"></span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="demoBtn" class="btn-ghost">
+    <span data-i18n="btnDemo"></span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M6 13l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <input id="fileInput" type="file" accept="image/*" hidden>
+  <ul class="checks">
+    <li><span class="chk">✓</span><span data-i18n="check1"></span></li>
+    <li><span class="chk">✓</span><span data-i18n="check2"></span></li>
+    <li><span class="chk">✓</span><span data-i18n="check3"></span></li>
+  </ul>
+</section>
+
+<section id="screen-loading" class="screen">
+  <div class="spinner"></div>
+  <p data-i18n="analyzing"></p>
+</section>
+
+<section id="screen-result" class="screen">
+  <div class="status-bar">
+    <span class="status-left"><span class="dot"></span><span data-i18n="statusDemo"></span></span>
+    <span class="status-right">✓ <span data-i18n="statusDone"></span></span>
+  </div>
+  <div class="preview-wrap"><canvas id="preview"></canvas></div>
+  <div class="score-card">
+    <div class="score-ring">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" class="ring-bg"/>
+        <circle cx="50" cy="50" r="42" class="ring-fg" id="ring"/>
+      </svg>
+      <div class="score-num">
+        <strong id="scoreVal">0,0</strong>
+        <small data-i18n="outOf10"></small>
+      </div>
+    </div>
+    <div class="score-meta">
+      <div class="meta-top">
+        <span class="muted" data-i18n="overall"></span>
+        <span class="badge" data-i18n="badgeDone"></span>
+      </div>
+      <div class="tier" id="tierName">—</div>
+      <div class="muted small" id="tierDesc">—</div>
+    </div>
+  </div>
+  <div id="metrics" class="metrics-grid"></div>
+  <button id="againBtn" class="btn-primary" style="margin-top:20px"><span data-i18n="again"></span></button>
+</section>
+
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12";
+
+if (window.Telegram?.WebApp){ Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
+
+const I18N = {
+  ru: { freePill:"10 бесплатных оценок", heroLine1:"Логово", heroLine2:"красивых", heroLine3:"людей",
+    heroSub:"Десять бесплатных попыток, чтобы увидеть свою внешность в цифрах: общая оценка, разбор по параметрам и подсказки.",
+    btnRate:"Оценить", btnDemo:"Посмотреть пример анализа", check1:"Без оплаты", check2:"Подробный разбор", check3:"Результат сразу",
+    analyzing:"Анализируем лицо…", statusDemo:"Демо-анализ", statusDone:"Результат готов",
+    overall:"Общая оценка", outOf10:"из 10", badgeDone:"Готово", again:"Оценить ещё раз",
+    noFace:"Лицо не найдено. Загрузи чёткое фото анфас.",
+    metrics:{symmetry:"Симметрия",canthal:"Линия глаз",eyes:"Форма глаз",nose:"Нос",lips:"Губы",jaw:"Челюсть",fwhr:"Пропорции",thirds:"Трети лица",cheeks:"Скулы",chin:"Подбородок"},
+    tiers:{sub5:{n:"Ниже среднего",d:"Есть пространство для экспериментов с ракурсом."},ltn:{n:"Средний−",d:"Спокойная база, есть куда расти."},mtn:{n:"Средний",d:"Уравновешенные черты, универсальная внешность."},htn:{n:"Выше среднего",d:"Сильные черты, заметная внешность."},chad:{n:"Chad",d:"Очень сильные черты лица."},gigachad:{n:"Gigachad",d:"Эталонные пропорции."}}
+  },
+  en: { freePill:"10 free ratings", heroLine1:"Den of", heroLine2:"beautiful", heroLine3:"people",
+    heroSub:"Ten free tries to see your face in numbers: overall score, a full breakdown and tips.",
+    btnRate:"Rate me", btnDemo:"See sample analysis", check1:"No payment", check2:"Detailed breakdown", check3:"Instant result",
+    analyzing:"Analyzing face…", statusDemo:"Demo analysis", statusDone:"Result ready",
+    overall:"Overall score", outOf10:"out of 10", badgeDone:"Done", again:"Rate again",
+    noFace:"No face detected. Upload a clear frontal photo.",
+    metrics:{symmetry:"Symmetry",canthal:"Eye line",eyes:"Eye shape",nose:"Nose",lips:"Lips",jaw:"Jaw",fwhr:"Proportions",thirds:"Facial thirds",cheeks:"Cheekbones",chin:"Chin"},
+    tiers:{sub5:{n:"Below average",d:"Room to experiment with angles."},ltn:{n:"Low tier normie",d:"Solid base, room to grow."},mtn:{n:"Mid tier normie",d:"Balanced features, versatile look."},htn:{n:"High tier normie",d:"Strong features, standout look."},chad:{n:"Chad",d:"Very strong facial features."},gigachad:{n:"Gigachad",d:"Reference-level proportions."}}
+  }
+};
+let lang = (window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || navigator.language || "ru").slice(0,2);
+if (!I18N[lang]) lang = "ru";
+const t = () => I18N[lang];
+
+function applyI18n(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.dataset.i18n;
+    if (t()[k] !== undefined) el.textContent = t()[k];
+  });
+  document.getElementById("langBtn").textContent = lang.toUpperCase();
+  if (lastResult) renderResult(lastResult);
+}
+document.getElementById("langBtn").onclick = ()=>{ lang = lang === "ru" ? "en" : "ru"; applyI18n(); };
+
+let landmarker = null;
+async function initLandmarker(){
+  if (landmarker) return landmarker;
+  const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
+  landmarker = await FaceLandmarker.createFromOptions(fileset,{
+    baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},
+    runningMode:"IMAGE", numFaces:1
+  });
+  return landmarker;
+}
+
+const dist = (a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+const angleDeg = (a,b,c)=>{const v1={x:a.x-b.x,y:a.y-b.y},v2={x:c.x-b.x,y:c.y-b.y};
+  const d=v1.x*v2.x+v1.y*v2.y, m=Math.hypot(v1.x,v1.y)*Math.hypot(v2.x,v2.y);
+  return Math.acos(Math.max(-1,Math.min(1,d/m)))*180/Math.PI;};
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const scoreMetric = (v,ideal,tol)=>clamp(Math.exp(-Math.pow((v-ideal)/tol,2))*10, .5, 10);
+
+const LM = {faceTop:10,chin:152,leftCheek:234,rightCheek:454,leftJaw:172,rightJaw:397,
+  noseTip:1,noseBottom:2,noseLeft:98,noseRight:327,
+  rEyeOuter:33,rEyeInner:133,rEyeTop:159,rEyeBot:145,
+  lEyeOuter:263,lEyeInner:362,lEyeTop:386,lEyeBot:374,
+  mouthL:61,mouthR:291,lipTop:13,lipBot:14,lipOuterTop:0,lipOuterBot:17,browCenter:9};
+
+function analyze(pts){
+  const P = i => pts[i];
+  const midX = (P(LM.leftCheek).x + P(LM.rightCheek).x)/2;
+  const pairs = [[LM.leftCheek,LM.rightCheek],[LM.leftJaw,LM.rightJaw],[LM.lEyeOuter,LM.rEyeOuter],[LM.lEyeInner,LM.rEyeInner],[LM.mouthL,LM.mouthR],[LM.noseLeft,LM.noseRight]];
+  let symErr = 0;
+  pairs.forEach(([l,r])=>{const dl=Math.abs(P(l).x-midX),dr=Math.abs(P(r).x-midX);symErr+=Math.abs(dl-dr)/(dl+dr+1e-6);});
+  symErr /= pairs.length;
+  const symmetry = scoreMetric(symErr, .01, .05);
+
+  const cR = Math.atan2(P(LM.rEyeOuter).y-P(LM.rEyeInner).y, P(LM.rEyeOuter).x-P(LM.rEyeInner).x)*180/Math.PI;
+  const cL = Math.atan2(P(LM.lEyeInner).y-P(LM.lEyeOuter).y, P(LM.lEyeInner).x-P(LM.lEyeOuter).x)*180/Math.PI;
+  const canthalScore = scoreMetric((Math.abs(cR)+Math.abs(cL))/2, 5, 5);
+
+  const eyeR = dist(P(LM.rEyeTop),P(LM.rEyeBot))/dist(P(LM.rEyeOuter),P(LM.rEyeInner));
+  const eyeL = dist(P(LM.lEyeTop),P(LM.lEyeBot))/dist(P(LM.lEyeOuter),P(LM.lEyeInner));
+  const eyesScore = scoreMetric((eyeR+eyeL)/2, .32, .10);
+
+  const noseW = dist(P(LM.noseLeft),P(LM.noseRight));
+  const noseH = dist(P(LM.noseTip),P(LM.noseBottom)) + dist(P(LM.browCenter),P(LM.noseTip))*.7;
+  const noseScore = scoreMetric(noseW/noseH, .55, .15);
+
+  const lipTotal = dist(P(LM.lipOuterTop),P(LM.lipOuterBot));
+  const lipUpper = dist(P(LM.lipOuterTop),P(LM.lipTop));
+  const lipsScore = scoreMetric(lipUpper/lipTotal, .38, .08);
+
+  const jawL = angleDeg(P(LM.leftCheek),P(LM.leftJaw),P(LM.chin));
+  const jawR = angleDeg(P(LM.rightCheek),P(LM.rightJaw),P(LM.chin));
+  const jawScore = scoreMetric((jawL+jawR)/2, 125, 15);
+
+  const bizyg = dist(P(LM.leftCheek),P(LM.rightCheek));
+  const midFace = Math.abs(P(LM.lipOuterTop).y - P(LM.browCenter).y);
+  const fwhrScore = scoreMetric(bizyg/midFace, 1.9, .35);
+
+  const topY=P(LM.faceTop).y, chinY=P(LM.chin).y, browY=P(LM.browCenter).y, noseBotY=P(LM.noseBottom).y;
+  const upper=browY-topY, mid=noseBotY-browY, lower=chinY-noseBotY, total=upper+mid+lower;
+  const dev = Math.abs(upper/total-1/3)+Math.abs(mid/total-1/3)+Math.abs(lower/total-1/3);
+  const thirdsScore = scoreMetric(dev, .03, .08);
+
+  const faceH = chinY-topY;
+  const cheeksScore = scoreMetric(bizyg/faceH, .72, .10);
+
+  const chinH = chinY - P(LM.lipOuterBot).y;
+  const chinScore = scoreMetric(chinH/lower, .48, .12);
+
+  const metrics = [{k:"symmetry",s:symmetry},{k:"canthal",s:canthalScore},{k:"eyes",s:eyesScore},{k:"nose",s:noseScore},{k:"lips",s:lipsScore},{k:"jaw",s:jawScore},{k:"fwhr",s:fwhrScore},{k:"thirds",s:thirdsScore},{k:"cheeks",s:cheeksScore},{k:"chin",s:chinScore}];
+  return {metrics, overall: metrics.reduce((a,m)=>a+m.s,0)/metrics.length};
+}
+function tierOf(s){ if(s<2.5)return"sub5"; if(s<4.5)return"ltn"; if(s<6)return"mtn"; if(s<7.5)return"htn"; if(s<9)return"chad"; return"gigachad";}
+
+const fileInput = document.getElementById("fileInput");
+document.getElementById("pickBtn").onclick = ()=>fileInput.click();
+document.getElementById("demoBtn").onclick = ()=>fileInput.click();
+document.getElementById("againBtn").onclick = ()=>{ show("screen-home"); fileInput.value=""; };
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
+
+let lastResult = null;
+fileInput.onchange = async (e)=>{
+  const file = e.target.files[0]; if (!file) return;
+  show("screen-loading");
+  try{
+    const img = await loadImage(file);
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const scale = Math.min(1, 720/img.width);
+    canvas.width = Math.round(img.width*scale);
+    canvas.height = Math.round(img.height*scale);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const lmk = await initLandmarker();
+    const res = lmk.detect(canvas);
+    if (!res.faceLandmarks?.length){ alert(t().noFace); show("screen-home"); return; }
+    const pts = res.faceLandmarks[0];
+    const r = analyze(pts);
+    lastResult = r;
+    drawOverlay(ctx, pts, canvas.width, canvas.height);
+    renderResult(r);
+    show("screen-result");
+  }catch(err){ console.error(err); alert("Error: "+err.message); show("screen-home"); }
+};
+
+function loadImage(file){
+  return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);});
+}
+
+function drawOverlay(ctx, pts, W, H){
+  const browY=pts[LM.browCenter].y*H, noseY=pts[LM.noseBottom].y*H, chinY=pts[LM.chin].y*H;
+  ctx.save(); ctx.shadowColor="rgba(212,180,106,.9)"; ctx.shadowBlur=6;
+  ctx.strokeStyle="rgba(212,180,106,.85)"; ctx.lineWidth=1;
+  [browY,noseY,chinY].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();});
+  ctx.restore();
+  const contour=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+  ctx.beginPath();
+  contour.forEach((i,k)=>{const p=pts[i],x=p.x*W,y=p.y*H;k?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.closePath(); ctx.strokeStyle="rgba(212,180,106,.4)"; ctx.lineWidth=1; ctx.stroke();
+  const m=18,len=24;
+  ctx.strokeStyle="rgba(212,180,106,.95)"; ctx.lineWidth=2;
+  [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,sx,sy])=>{
+    ctx.beginPath(); ctx.moveTo(x,y+sy*len); ctx.lineTo(x,y); ctx.lineTo(x+sx*len,y); ctx.stroke();
+  });
+}
+
+function renderResult({metrics, overall}){
+  const dec = lang === "ru" ? "," : ".";
+  document.getElementById("scoreVal").textContent = overall.toFixed(1).replace(".", dec);
+  const C = 2*Math.PI*42;
+  const ring = document.getElementById("ring");
+  ring.style.strokeDasharray = C;
+  requestAnimationFrame(()=>{ ring.style.strokeDashoffset = C*(1-overall/10); });
+  const tier = t().tiers[tierOf(overall)];
+  document.getElementById("tierName").textContent = tier.n;
+  document.getElementById("tierDesc").textContent = tier.d;
+  const grid = document.getElementById("metrics"); grid.innerHTML="";
+  metrics.forEach(m=>{
+    const name = t().metrics[m.k] || m.k;
+    const v = m.s.toFixed(1).replace(".", dec);
+    grid.insertAdjacentHTML("beforeend", `<div class="metric"><div class="row"><span>${name}</span><span class="val">${v}/10</span></div><div class="bar"><i style="width:${m.s*10}%"></i></div></div>`);
+  });
+}
+
+applyI18n();
+</script>
+</body>
+  </html>
